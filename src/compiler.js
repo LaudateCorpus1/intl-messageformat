@@ -74,6 +74,26 @@ Compiler.prototype.compileMessageText = function (element) {
     return element.value.replace(/\\#/g, '#');
 };
 
+// Patch to fix Sentry error: "Unsupported time zone specified undefined"
+function createDateTimeFormatter(locales, options) {
+    var formatter;
+    try {
+        // This can also throw "Unsupported time zone specified undefined"
+        formatter = new Intl.DateTimeFormat(locales, options);
+    } catch (e) {}
+
+    // Following code pulled from
+    // https://github.com/GoogleChrome/lighthouse/blob/2ff07d29a3e12a75cc844427c567330eb84d4249/lighthouse-core/report/html/renderer/util.js#L241-L247
+
+    // Force UTC if runtime timezone could not be detected.
+    // See https://github.com/GoogleChrome/lighthouse/issues/1056
+    var tz = formatter ? formatter.resolvedOptions().timeZone : null;
+    if (!tz || tz.toLowerCase() === 'etc/unknown') {
+      return new Intl.DateTimeFormat(locales, Object.assign({}, options, {timeZone: 'UTC'}));
+    }
+    return formatter;
+}
+
 Compiler.prototype.compileArgument = function (element) {
     var format = element.format;
 
@@ -98,14 +118,14 @@ Compiler.prototype.compileArgument = function (element) {
             options = formats.date[format.style];
             return {
                 id    : element.id,
-                format: new Intl.DateTimeFormat(locales, options).format
+                format: createDateTimeFormatter(locales, options).format
             };
 
         case 'timeFormat':
             options = formats.time[format.style];
             return {
                 id    : element.id,
-                format: new Intl.DateTimeFormat(locales, options).format
+                format: createDateTimeFormatter(locales, options).format
             };
 
         case 'pluralFormat':

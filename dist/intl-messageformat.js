@@ -123,6 +123,26 @@
         return element.value.replace(/\\#/g, '#');
     };
 
+    // Patch to fix Sentry error: "Unsupported time zone specified undefined"
+    function $$compiler$$createDateTimeFormatter(locales, options) {
+        var formatter;
+        try {
+            // This can also throw "Unsupported time zone specified undefined"
+            formatter = new Intl.DateTimeFormat(locales, options);
+        } catch (e) {}
+
+        // Following code pulled from
+        // https://github.com/GoogleChrome/lighthouse/blob/2ff07d29a3e12a75cc844427c567330eb84d4249/lighthouse-core/report/html/renderer/util.js#L241-L247
+
+        // Force UTC if runtime timezone could not be detected.
+        // See https://github.com/GoogleChrome/lighthouse/issues/1056
+        var tz = formatter ? formatter.resolvedOptions().timeZone : null;
+        if (!tz || tz.toLowerCase() === 'etc/unknown') {
+          return new Intl.DateTimeFormat(locales, Object.assign({}, options, {timeZone: 'UTC'}));
+        }
+        return formatter;
+    }
+
     $$compiler$$Compiler.prototype.compileArgument = function (element) {
         var format = element.format;
 
@@ -147,14 +167,14 @@
                 options = formats.date[format.style];
                 return {
                     id    : element.id,
-                    format: new Intl.DateTimeFormat(locales, options).format
+                    format: $$compiler$$createDateTimeFormatter(locales, options).format
                 };
 
             case 'timeFormat':
                 options = formats.time[format.style];
                 return {
                     id    : element.id,
-                    format: new Intl.DateTimeFormat(locales, options).format
+                    format: $$compiler$$createDateTimeFormatter(locales, options).format
                 };
 
             case 'pluralFormat':
@@ -1862,7 +1882,7 @@
             locales.join(', ') + ', or the default locale: ' + defaultLocale
         );
     };
-    var $$en$$default = {"locale":"en","pluralRuleFunction":function (n,ord){var s=String(n).split("."),v0=!s[1],t0=Number(s[0])==n,n10=t0&&s[0].slice(-1),n100=t0&&s[0].slice(-2);if(ord)return n10==1&&n100!=11?"one":n10==2&&n100!=12?"two":n10==3&&n100!=13?"few":"other";return n==1&&v0?"one":"other"}};
+    var $$en$$default = {"locale":"en","pluralRuleFunction":function(n,ord){var s=String(n).split("."),v0=!s[1],t0=Number(s[0])==n,n10=t0&&s[0].slice(-1),n100=t0&&s[0].slice(-2);if(ord)return n10==1&&n100!=11?"one":n10==2&&n100!=12?"two":n10==3&&n100!=13?"few":"other";return n==1&&v0?"one":"other"}};
 
     $$core$$default.__addLocaleData($$en$$default);
     $$core$$default.defaultLocale = 'en';

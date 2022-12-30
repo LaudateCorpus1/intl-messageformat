@@ -44,7 +44,7 @@
     "fs-extra": "^8.0.1",
     "intl": "^1.2.0",
     "intl-pluralrules": "^1.0.1",
-    "mocha": "^6.0.0",
+    "mocha": "^10.2.0",
     "nyc": "^14.1.1",
     "prettier": "^1.17.1",
     "rimraf": "^2.6.3",
